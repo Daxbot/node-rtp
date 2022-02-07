@@ -1,6 +1,6 @@
 {
     "name": "@daxbot/rtp",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Real-time transport protocol",
     "main": "index.js",
     "scripts": {
