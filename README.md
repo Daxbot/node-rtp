@@ -2,6 +2,13 @@
 
 NodeJS wrapper for librtp
 
+## Installation
+
+To install this package using npm run the following:
+
+    npm config set @daxbot:registry https://npm.pkg.github.com/
+    npm install @daxbot/rtp
+
 ## Usage
 
 ```js
