@@ -1,0 +1,3 @@
+[submodule "extern/librtp"]
+	path = extern/librtp
+	url = git@github.com:Daxbot/librtp.git
