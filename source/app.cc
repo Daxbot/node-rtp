@@ -23,14 +23,7 @@ Napi::Object AppPacket::Init(Napi::Env env, Napi::Object exports)
 
 AppPacket::AppPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
 {
-     Napi::Env env = info.Env();
-
-    if(info.Length() < 1 || !(info[0].IsNumber() || info[0].IsBuffer())) {
-        auto e = Napi::TypeError::New(env,
-            "Must provide either a packet subtype (Number) or a Buffer");
-
-        e.ThrowAsJavaScriptException();
-    }
+    Napi::Env env = info.Env();
 
     packet = rtcp_app_create();
     if(!packet) {
@@ -38,13 +31,10 @@ AppPacket::AppPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
         e.ThrowAsJavaScriptException();
     }
 
-    if(info[0].IsNumber()) {
-        // Packet subtype
-        const unsigned int subtype = info[0].As<Napi::Number>();
-        rtcp_app_init(packet, subtype);
+    if(!info.Length()) {
+        rtcp_app_init(packet, 0);
     }
-    else {
-        // Buffer
+    else if(info[0].IsBuffer()) {
         auto buffer = info[0].As<Napi::Uint8Array>();
         if(rtcp_app_parse(packet, buffer.Data(), buffer.ElementLength()) != 0) {
             auto e = Napi::Error::New(env, "Failed to parse Buffer");
@@ -54,6 +44,14 @@ AppPacket::AppPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
 
             e.ThrowAsJavaScriptException();
         }
+    }
+    else {
+        auto e = Napi::Error::New(env, "Optional parameter must be a Buffer");
+
+        rtcp_app_free(packet);
+        packet = nullptr;
+
+        e.ThrowAsJavaScriptException();
     }
 }
 

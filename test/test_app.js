@@ -6,11 +6,11 @@ chai.use(require('chai-bytes'));
 
 describe('AppPacket', function() {
     it('should be constructable', function() {
-        new AppPacket(0);
+        new AppPacket();
     });
 
     it('should support arbitrary app data', function() {
-        const pkt = new AppPacket(0);
+        const pkt = new AppPacket();
         const start_size = pkt.size;
 
         const buffer = Buffer.from([1, 2, 3, 4, 5]);
