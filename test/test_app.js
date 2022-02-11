@@ -1,12 +1,21 @@
 const chai = require('chai');
-const { AppPacket } = require('..');
+const { AppPacket, PacketType, parse } = require('..');
 
 const expect = chai.expect;
 chai.use(require('chai-bytes'));
 
 describe('AppPacket', function() {
     it('should be constructable', function() {
-        new AppPacket();
+        const pkt = new AppPacket();
+        expect(pkt.version).to.equal(2);
+        expect(pkt.type).to.equal(PacketType.APP);
+    });
+
+    it('should be parsable', function() {
+        const pkt1 = new AppPacket();
+        const pkt2 = parse(pkt1.serialize());
+        expect(pkt2 instanceof AppPacket).to.be.true;
+        expect(pkt2.type).to.equal(PacketType.APP);
     });
 
     it('should support arbitrary app data', function() {

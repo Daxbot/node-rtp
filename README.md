@@ -21,20 +21,23 @@ and control data and are typically sent on the next higher odd-numbered port.
 
 Packet objects have a common `serialize()` method to convert the packet into a
 NodeJS Buffer. A Buffer can be converted back to it's corresponding packet
-object by passing it into the packet constructor.
+object by passing it into the packet constructor. A convience method `parse()`
+is provided which will attempt to convert an unknown Buffer into its
+corresponding packet object based on type.
 
 An example of Buffer parsing:
 ```js
-const { RtpPacket } = require("rtp");
+const { RtpPacket, parse } = require("rtp");
 
 // Create a Buffer containing a serialized RTP packet
 const pkt1 = new RtpPacket(96);
-pkt1.payload = Buffer.alloc(10);
+pkt1.payload = Buffer.from([1, 2, 3]);
 const buffer = pkt1.serialize(); // <Buffer ... >
 
 // Parse the Buffer
-const pkt2 = new RtpPacket(buffer); // pkt2 == pkt1
-console.log(pkt2.payload);
+const pkt2 = parse(buffer);
+console.log(pkt2 instanceof RtpPacket); // true
+console.log(pkt2.payload); // <Buffer 01 02 03>
 ```
 
 What follows are initialization examples for each packet type.

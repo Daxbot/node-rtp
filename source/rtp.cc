@@ -5,14 +5,14 @@ Napi::Object RtpPacket::Init(Napi::Env env, Napi::Object exports)
     Napi::Function func = DefineClass(env, "RtpPacket", {
         InstanceMethod<&RtpPacket::Serialize>("serialize", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetSize>("size", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetVersion, &RtpPacket::SetVersion>("version", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetPadding, &RtpPacket::SetPadding>("p", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetExtension, &RtpPacket::SetExtension>("x", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetCsrcCount, &RtpPacket::SetCsrcCount>("cc", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetMarker, &RtpPacket::SetMarker>("m", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetType, &RtpPacket::SetType>("pt", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetSequence, &RtpPacket::SetSequence>("seq", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetTimestamp, &RtpPacket::SetTimestamp>("ts", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetVersion>("version", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetPadding, &RtpPacket::SetPadding>("padding", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetExtension, &RtpPacket::SetExtension>("extension", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetCsrcCount, &RtpPacket::SetCsrcCount>("csrc_count", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetMarker, &RtpPacket::SetMarker>("marker", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetType, &RtpPacket::SetType>("type", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetSequence, &RtpPacket::SetSequence>("sequence", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetTimestamp, &RtpPacket::SetTimestamp>("timestamp", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetSsrc, &RtpPacket::SetSsrc>("ssrc", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetPayload, &RtpPacket::SetPayload>("payload", napi_enumerable),
     });
@@ -142,11 +142,6 @@ Napi::Value RtpPacket::GetPayload(const Napi::CallbackInfo &info)
     memcpy(buffer.Data(), packet->payload_data, buffer.Length());
 
     return buffer;
-}
-
-void RtpPacket::SetVersion(const Napi::CallbackInfo &info, const Napi::Value &value)
-{
-    packet->header->version = value.As<Napi::Number>();
 }
 
 void RtpPacket::SetPadding(const Napi::CallbackInfo &info, const Napi::Value &value)

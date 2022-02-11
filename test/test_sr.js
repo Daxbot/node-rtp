@@ -1,11 +1,20 @@
 const chai = require('chai');
-const { SrPacket } = require('..');
+const { SrPacket, PacketType, parse } = require('..');
 
 const expect = chai.expect;
 
 describe('SrPacket', function() {
     it('should be constructable', function() {
-        new SrPacket();
+        const pkt = new SrPacket();
+        expect(pkt.version).to.equal(2);
+        expect(pkt.type).to.equal(PacketType.SR);
+    });
+
+    it('should be parsable', function() {
+        const pkt1 = new SrPacket();
+        const pkt2 = parse(pkt1.serialize());
+        expect(pkt2 instanceof SrPacket).to.be.true;
+        expect(pkt2.type).to.equal(PacketType.SR);
     });
 
     it('should add reports', function() {

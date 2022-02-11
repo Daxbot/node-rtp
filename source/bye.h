@@ -19,6 +19,10 @@ class ByePacket : public Napi::ObjectWrap<ByePacket>
 
         // Getters
         Napi::Value GetSize(const Napi::CallbackInfo &info);
+        Napi::Value GetVersion(const Napi::CallbackInfo &info);
+        Napi::Value GetPadding(const Napi::CallbackInfo &info);
+        Napi::Value GetCount(const Napi::CallbackInfo &info);
+        Napi::Value GetType(const Napi::CallbackInfo &info);
         Napi::Value GetSources(const Napi::CallbackInfo &info);
         Napi::Value GetMessage(const Napi::CallbackInfo &info);
 

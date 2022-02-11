@@ -9,6 +9,10 @@ Napi::Object ByePacket::Init(Napi::Env env, Napi::Object exports)
         InstanceMethod<&ByePacket::AddSource>("addSource", napi_enumerable),
         InstanceMethod<&ByePacket::RemoveSource>("removeSource", napi_enumerable),
         InstanceAccessor<&ByePacket::GetSize>("size", napi_enumerable),
+        InstanceAccessor<&ByePacket::GetVersion>("version", napi_enumerable),
+        InstanceAccessor<&ByePacket::GetPadding>("padding", napi_enumerable),
+        InstanceAccessor<&ByePacket::GetCount>("count", napi_enumerable),
+        InstanceAccessor<&ByePacket::GetType>("type", napi_enumerable),
         InstanceAccessor<&ByePacket::GetSources>("sources", napi_enumerable),
         InstanceAccessor<&ByePacket::GetMessage, &ByePacket::SetMessage>("message", napi_enumerable),
     });
@@ -94,6 +98,26 @@ Napi::Value ByePacket::RemoveSource(const Napi::CallbackInfo &info)
 Napi::Value ByePacket::GetSize(const Napi::CallbackInfo &info)
 {
     return Napi::Number::New(info.Env(), rtcp_bye_size(packet));
+}
+
+Napi::Value ByePacket::GetVersion(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.version);
+}
+
+Napi::Value ByePacket::GetPadding(const Napi::CallbackInfo &info)
+{
+    return Napi::Boolean::New(info.Env(), packet->header.common.p);
+}
+
+Napi::Value ByePacket::GetCount(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.count);
+}
+
+Napi::Value ByePacket::GetType(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.pt);
 }
 
 Napi::Value ByePacket::GetSources(const Napi::CallbackInfo &info)

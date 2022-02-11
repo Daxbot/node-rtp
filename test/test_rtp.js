@@ -1,12 +1,21 @@
 const chai = require('chai');
-const { RtpPacket } = require('..');
+const { RtpPacket, parse } = require('..');
 
 const expect = chai.expect;
 chai.use(require('chai-bytes'));
 
 describe('RtpPacket', function() {
     it('should be constructable', function() {
-        new RtpPacket(96);
+        const pkt = new RtpPacket(96);
+        expect(pkt.version).to.equal(2);
+        expect(pkt.type).to.equal(96);
+    });
+
+    it('should be parsable', function() {
+        const pkt1 = new RtpPacket(96);
+        const pkt2 = parse(pkt1.serialize());
+        expect(pkt2 instanceof RtpPacket).to.be.true;
+        expect(pkt2.type).to.equal(96);
     });
 
     it('should throw without parameters', function() {

@@ -16,6 +16,9 @@ class AppPacket : public Napi::ObjectWrap<AppPacket>
 
         // Getters
         Napi::Value GetSize(const Napi::CallbackInfo &info);
+        Napi::Value GetVersion(const Napi::CallbackInfo &info);
+        Napi::Value GetPadding(const Napi::CallbackInfo &info);
+        Napi::Value GetType(const Napi::CallbackInfo &info);
         Napi::Value GetSubtype(const Napi::CallbackInfo &info);
         Napi::Value GetSource(const Napi::CallbackInfo &info);
         Napi::Value GetName(const Napi::CallbackInfo &info);

@@ -18,6 +18,10 @@ Napi::Object SrPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceMethod<&SrPacket::AddReport>("addReport", napi_enumerable),
         InstanceMethod<&SrPacket::RemoveReport>("removeReport", napi_enumerable),
         InstanceAccessor<&SrPacket::GetSize>("size", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetVersion>("version", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetPadding>("padding", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetCount>("count", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetType>("type", napi_enumerable),
         InstanceAccessor<&SrPacket::GetReports>("reports", napi_enumerable),
         InstanceAccessor<&SrPacket::GetSsrc, &SrPacket::SetSsrc>("ssrc", napi_enumerable),
         InstanceAccessor<&SrPacket::GetNtpTime, &SrPacket::SetNtpTime>("ntp_ts", napi_enumerable),
@@ -125,6 +129,26 @@ Napi::Value SrPacket::RemoveReport(const Napi::CallbackInfo &info)
 Napi::Value SrPacket::GetSize(const Napi::CallbackInfo &info)
 {
     return Napi::Number::New(info.Env(), rtcp_sr_size(packet));
+}
+
+Napi::Value SrPacket::GetVersion(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.version);
+}
+
+Napi::Value SrPacket::GetPadding(const Napi::CallbackInfo &info)
+{
+    return Napi::Boolean::New(info.Env(), packet->header.common.p);
+}
+
+Napi::Value SrPacket::GetCount(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.count);
+}
+
+Napi::Value SrPacket::GetType(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.pt);
 }
 
 Napi::Value SrPacket::GetSsrc(const Napi::CallbackInfo &info)

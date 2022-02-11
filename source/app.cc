@@ -7,6 +7,9 @@ Napi::Object AppPacket::Init(Napi::Env env, Napi::Object exports)
     Napi::Function func = DefineClass(env, "AppPacket", {
         InstanceMethod<&AppPacket::Serialize>("serialize", napi_enumerable),
         InstanceAccessor<&AppPacket::GetSize>("size", napi_enumerable),
+        InstanceAccessor<&AppPacket::GetVersion>("version", napi_enumerable),
+        InstanceAccessor<&AppPacket::GetPadding>("padding", napi_enumerable),
+        InstanceAccessor<&AppPacket::GetType>("type", napi_enumerable),
         InstanceAccessor<&AppPacket::GetSubtype, &AppPacket::SetSubtype>("subtype", napi_enumerable),
         InstanceAccessor<&AppPacket::GetSource, &AppPacket::SetSource>("source", napi_enumerable),
         InstanceAccessor<&AppPacket::GetName, &AppPacket::SetName>("name", napi_enumerable),
@@ -72,6 +75,21 @@ Napi::Value AppPacket::Serialize(const Napi::CallbackInfo &info)
 Napi::Value AppPacket::GetSize(const Napi::CallbackInfo &info)
 {
     return Napi::Number::New(info.Env(), rtcp_app_size(packet));
+}
+
+Napi::Value AppPacket::GetVersion(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.app.version);
+}
+
+Napi::Value AppPacket::GetPadding(const Napi::CallbackInfo &info)
+{
+    return Napi::Boolean::New(info.Env(), packet->header.app.p);
+}
+
+Napi::Value AppPacket::GetType(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.app.pt);
 }
 
 Napi::Value AppPacket::GetSubtype(const Napi::CallbackInfo &info)

@@ -19,6 +19,10 @@ class SrPacket : public Napi::ObjectWrap<SrPacket>
 
         // Getters
         Napi::Value GetSize(const Napi::CallbackInfo &info);
+        Napi::Value GetVersion(const Napi::CallbackInfo &info);
+        Napi::Value GetPadding(const Napi::CallbackInfo &info);
+        Napi::Value GetCount(const Napi::CallbackInfo &info);
+        Napi::Value GetType(const Napi::CallbackInfo &info);
         Napi::Value GetReports(const Napi::CallbackInfo &info);
         Napi::Value GetSsrc(const Napi::CallbackInfo &info);
         Napi::Value GetNtpTime(const Napi::CallbackInfo &info);

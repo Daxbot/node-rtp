@@ -28,7 +28,6 @@ class RtpPacket : public Napi::ObjectWrap<RtpPacket>
         Napi::Value GetPayload(const Napi::CallbackInfo &info);
 
         // Setters
-        void SetVersion(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetPadding(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetExtension(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetCsrcCount(const Napi::CallbackInfo &info, const Napi:: Value &value);

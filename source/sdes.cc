@@ -9,6 +9,10 @@ Napi::Object SdesPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceMethod<&SdesPacket::AddSource>("addSource", napi_enumerable),
         InstanceMethod<&SdesPacket::RemoveSource>("removeSource", napi_enumerable),
         InstanceAccessor<&SdesPacket::GetSize>("size", napi_enumerable),
+        InstanceAccessor<&SdesPacket::GetVersion>("version", napi_enumerable),
+        InstanceAccessor<&SdesPacket::GetPadding>("padding", napi_enumerable),
+        InstanceAccessor<&SdesPacket::GetCount>("count", napi_enumerable),
+        InstanceAccessor<&SdesPacket::GetType>("type", napi_enumerable),
         InstanceAccessor<&SdesPacket::GetSources>("sources", napi_enumerable),
     });
 
@@ -223,8 +227,27 @@ Napi::Value SdesPacket::GetSources(const Napi::CallbackInfo &info)
     return array;
 }
 
-
 Napi::Value SdesPacket::GetSize(const Napi::CallbackInfo &info)
 {
     return Napi::Number::New(info.Env(), rtcp_sdes_size(packet));
+}
+
+Napi::Value SdesPacket::GetVersion(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.version);
+}
+
+Napi::Value SdesPacket::GetPadding(const Napi::CallbackInfo &info)
+{
+    return Napi::Boolean::New(info.Env(), packet->header.common.p);
+}
+
+Napi::Value SdesPacket::GetCount(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.count);
+}
+
+Napi::Value SdesPacket::GetType(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->header.common.pt);
 }
