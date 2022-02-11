@@ -34,20 +34,18 @@ RtpPacket::RtpPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
             "Must provide either a packet type (Number) or a Buffer");
 
         e.ThrowAsJavaScriptException();
-        return;
     }
 
     packet = rtp_packet_create();
     if(!packet) {
         auto e = Napi::Error::New(env, "Failed to allocate memory");
         e.ThrowAsJavaScriptException();
-        return;
     }
 
     if(info[0].IsNumber()) {
         // Packet type
-        int packet_type = info[0].As<Napi::Number>();
-        if(packet_type < 0 || packet_type > 0x7f) {
+        const unsigned int pt = info[0].As<Napi::Number>();
+        if(pt < 0 || pt > 0x7f) {
             auto e = Napi::RangeError::New(env,
                 "Packet type must be in range [0-127]");
 
@@ -57,7 +55,7 @@ RtpPacket::RtpPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
             e.ThrowAsJavaScriptException();
         }
         else {
-            rtp_packet_init(packet, packet_type);
+            rtp_packet_init(packet, pt);
         }
     }
     else {

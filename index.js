@@ -1,5 +1,10 @@
-const { RtpPacket } = require("bindings")("node_rtp");
+const rtp = require("bindings")("node_rtp");
 
 module.exports=exports= {
-    RtpPacket: RtpPacket
+    AppPacket: rtp.AppPacket,
+    ByePacket: rtp.ByePacket,
+    RrPacket: rtp.RrPacket,
+    RtpPacket: rtp.RtpPacket,
+    SdesPacket: rtp.SdesPacket,
+    SrPacket: rtp.SrPacket,
 };

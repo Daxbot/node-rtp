@@ -1,0 +1,38 @@
+#ifndef NODE_SR_H_
+#define NODE_SR_H_
+
+#include <napi.h>
+#include "rtp/rtcp_sr.h"
+
+class SrPacket : public Napi::ObjectWrap<SrPacket>
+{
+    public:
+        static Napi::Object Init(Napi::Env env, Napi::Object exports);
+
+        SrPacket(const Napi::CallbackInfo &info);
+        ~SrPacket();
+
+        Napi::Value Serialize(const Napi::CallbackInfo &info);
+
+        Napi::Value AddReport(const Napi::CallbackInfo &info);
+        Napi::Value RemoveReport(const Napi::CallbackInfo &info);
+
+        // Getters
+        Napi::Value GetSize(const Napi::CallbackInfo &info);
+        Napi::Value GetReports(const Napi::CallbackInfo &info);
+        Napi::Value GetSsrc(const Napi::CallbackInfo &info);
+        Napi::Value GetNtpTime(const Napi::CallbackInfo &info);
+        Napi::Value GetRtpTime(const Napi::CallbackInfo &info);
+        Napi::Value GetExtension(const Napi::CallbackInfo &info);
+
+        // Setters
+        void SetSsrc(const Napi::CallbackInfo &info, const Napi:: Value &value);
+        void SetNtpTime(const Napi::CallbackInfo &info, const Napi:: Value &value);
+        void SetRtpTime(const Napi::CallbackInfo &info, const Napi:: Value &value);
+        void SetExtension(const Napi::CallbackInfo &info, const Napi:: Value &value);
+
+    private:
+        rtcp_sr *packet = nullptr;
+};
+
+#endif // NODE_SR_H_
