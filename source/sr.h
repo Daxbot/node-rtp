@@ -27,12 +27,16 @@ class SrPacket : public Napi::ObjectWrap<SrPacket>
         Napi::Value GetSsrc(const Napi::CallbackInfo &info);
         Napi::Value GetNtpTime(const Napi::CallbackInfo &info);
         Napi::Value GetRtpTime(const Napi::CallbackInfo &info);
+        Napi::Value GetPktCount(const Napi::CallbackInfo &info);
+        Napi::Value GetByteCount(const Napi::CallbackInfo &info);
         Napi::Value GetExtension(const Napi::CallbackInfo &info);
 
         // Setters
         void SetSsrc(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetNtpTime(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetRtpTime(const Napi::CallbackInfo &info, const Napi:: Value &value);
+        void SetPktCount(const Napi::CallbackInfo &info, const Napi:: Value &value);
+        void SetByteCount(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetExtension(const Napi::CallbackInfo &info, const Napi:: Value &value);
 
     private:

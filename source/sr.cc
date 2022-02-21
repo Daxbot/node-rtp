@@ -198,6 +198,16 @@ Napi::Value SrPacket::GetReports(const Napi::CallbackInfo &info)
     return array;
 }
 
+Napi::Value SrPacket::GetPktCount(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->pkt_count);
+}
+
+Napi::Value SrPacket::GetByteCount(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->byte_count);
+}
+
 Napi::Value SrPacket::GetExtension(const Napi::CallbackInfo &info)
 {
     auto buffer = Napi::Buffer<uint8_t>::New(info.Env(), packet->ext_size);
@@ -231,6 +241,16 @@ void SrPacket::SetNtpTime(const Napi::CallbackInfo &info, const Napi::Value &val
 void SrPacket::SetRtpTime(const Napi::CallbackInfo &info, const Napi::Value &value)
 {
     packet->rtp_ts = value.As<Napi::Number>();
+}
+
+void SrPacket::SetPktCount(const Napi::CallbackInfo &info, const Napi::Value &value)
+{
+    packet->pkt_count = value.As<Napi::Number>();
+}
+
+void SrPacket::SetByteCount(const Napi::CallbackInfo &info, const Napi::Value &value)
+{
+    packet->byte_count = value.As<Napi::Number>();
 }
 
 void SrPacket::SetExtension(const Napi::CallbackInfo &info, const Napi::Value &value)

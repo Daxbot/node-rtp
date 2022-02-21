@@ -6,13 +6,13 @@ Napi::Object RtpPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceMethod<&RtpPacket::Serialize>("serialize", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetSize>("size", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetVersion>("version", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetPadding, &RtpPacket::SetPadding>("padding", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetExtension, &RtpPacket::SetExtension>("extension", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetPadding, &RtpPacket::SetPadding>("p", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetExtension, &RtpPacket::SetExtension>("x", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetCsrcCount, &RtpPacket::SetCsrcCount>("csrc_count", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetMarker, &RtpPacket::SetMarker>("marker", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetMarker, &RtpPacket::SetMarker>("m", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetType, &RtpPacket::SetType>("type", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetSequence, &RtpPacket::SetSequence>("sequence", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetTimestamp, &RtpPacket::SetTimestamp>("timestamp", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetSequence, &RtpPacket::SetSequence>("seq", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetTimestamp, &RtpPacket::SetTimestamp>("ts", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetSsrc, &RtpPacket::SetSsrc>("ssrc", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetPayload, &RtpPacket::SetPayload>("payload", napi_enumerable),
     });
@@ -190,6 +190,9 @@ void RtpPacket::SetPayload(const Napi::CallbackInfo &info, const Napi::Value &va
         rtp_packet_clear_payload(packet);
         return;
     }
+
+    if(packet->payload_data)
+        rtp_packet_clear_payload(packet);
 
     auto buffer = value.As<Napi::Uint8Array>();
     rtp_packet_set_payload(packet, buffer.Data(), buffer.ElementLength());

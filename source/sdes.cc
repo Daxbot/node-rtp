@@ -79,7 +79,6 @@ void SdesPacket::AddSource(const Napi::CallbackInfo &info)
     if(info.Length() < 1) {
         auto e = Napi::Error::New(info.Env(), "Must provide a source");
         e.ThrowAsJavaScriptException();
-        return;
     }
 
     auto value = info[0].ToObject();
