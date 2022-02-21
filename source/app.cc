@@ -11,7 +11,7 @@ Napi::Object AppPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceAccessor<&AppPacket::GetPadding>("padding", napi_enumerable),
         InstanceAccessor<&AppPacket::GetType>("type", napi_enumerable),
         InstanceAccessor<&AppPacket::GetSubtype, &AppPacket::SetSubtype>("subtype", napi_enumerable),
-        InstanceAccessor<&AppPacket::GetSource, &AppPacket::SetSource>("source", napi_enumerable),
+        InstanceAccessor<&AppPacket::GetSource, &AppPacket::SetSource>("ssrc", napi_enumerable),
         InstanceAccessor<&AppPacket::GetName, &AppPacket::SetName>("name", napi_enumerable),
         InstanceAccessor<&AppPacket::GetData, &AppPacket::SetData>("data", napi_enumerable),
     });
@@ -99,7 +99,7 @@ Napi::Value AppPacket::GetSubtype(const Napi::CallbackInfo &info)
 
 Napi::Value AppPacket::GetSource(const Napi::CallbackInfo &info)
 {
-    return Napi::Number::New(info.Env(), packet->src);
+    return Napi::Number::New(info.Env(), packet->ssrc);
 }
 
 Napi::Value AppPacket::GetName(const Napi::CallbackInfo &info)
@@ -122,7 +122,7 @@ void AppPacket::SetSubtype(const Napi::CallbackInfo &info, const Napi::Value &va
 
 void AppPacket::SetSource(const Napi::CallbackInfo &info, const Napi::Value &value)
 {
-    packet->src = value.As<Napi::Number>();
+    packet->ssrc = value.As<Napi::Number>();
 }
 
 void AppPacket::SetName(const Napi::CallbackInfo &info, const Napi::Value &value)

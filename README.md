@@ -79,8 +79,8 @@ const { AppPacket } = require("rtp");
 
 // Creating a new AppPacket
 const pkt = new AppPacket();
+pkt.ssrc = 0;
 pkt.subtype = 1;
-pkt.source = 0;
 pkt.name = 0x646178; // dax
 pkt.data = Buffer.alloc(10);
 
