@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 
+/**
+ * This example shows:
+ *  - Sending simple RTP payloads.
+ */
+
 const dgram = require('dgram');
 const { RtpPacket } = require('../index.js');
 
 // Unpack Math
-const {sin, pow, PI} = Math;
+const { sin, pow, PI } = Math;
 
 const DEFAULT_ADDRESS = '127.0.0.1';
 const DEFAULT_PORT = 5002;
@@ -113,10 +118,10 @@ class ToneGenerator {
      * Stop sending RTP packets.
      */
     stop() {
-        this.socket.disconnect();
+        this.socket.close();
         clearInterval(this.timer);
     }
-}
+};
 
 if(require.main === module) {
     const gen = new ToneGenerator();

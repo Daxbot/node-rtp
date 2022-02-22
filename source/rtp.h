@@ -25,12 +25,12 @@ class RtpPacket : public Napi::ObjectWrap<RtpPacket>
         Napi::Value GetSequence(const Napi::CallbackInfo &info);
         Napi::Value GetTimestamp(const Napi::CallbackInfo &info);
         Napi::Value GetSsrc(const Napi::CallbackInfo &info);
+        Napi::Value GetCsrcs(const Napi::CallbackInfo &info);
         Napi::Value GetPayload(const Napi::CallbackInfo &info);
 
         // Setters
         void SetPadding(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetExtension(const Napi::CallbackInfo &info, const Napi:: Value &value);
-        void SetCsrcCount(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetMarker(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetType(const Napi::CallbackInfo &info, const Napi:: Value &value);
         void SetSequence(const Napi::CallbackInfo &info, const Napi:: Value &value);

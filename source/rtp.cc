@@ -6,9 +6,10 @@ Napi::Object RtpPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceMethod<&RtpPacket::Serialize>("serialize", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetSize>("size", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetVersion>("version", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetCsrcCount>("csrc_count", napi_enumerable),
+        InstanceAccessor<&RtpPacket::GetCsrcs>("csrcs", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetPadding, &RtpPacket::SetPadding>("p", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetExtension, &RtpPacket::SetExtension>("x", napi_enumerable),
-        InstanceAccessor<&RtpPacket::GetCsrcCount, &RtpPacket::SetCsrcCount>("csrc_count", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetMarker, &RtpPacket::SetMarker>("m", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetType, &RtpPacket::SetType>("type", napi_enumerable),
         InstanceAccessor<&RtpPacket::GetSequence, &RtpPacket::SetSequence>("seq", napi_enumerable),
@@ -136,6 +137,15 @@ Napi::Value RtpPacket::GetSsrc(const Napi::CallbackInfo &info)
     return Napi::Number::New(info.Env(), packet->header->ssrc);
 }
 
+Napi::Value RtpPacket::GetCsrcs(const Napi::CallbackInfo &info)
+{
+    auto array = Napi::Array::New(info.Env(), packet->header->cc);
+    for(uint8_t i = 0; i < packet->header->cc; ++i)
+        array[i] = Napi::Number::New(info.Env(), packet->header->csrc[i]);
+
+    return array;
+}
+
 Napi::Value RtpPacket::GetPayload(const Napi::CallbackInfo &info)
 {
     auto buffer = Napi::Buffer<uint8_t>::New(info.Env(), packet->payload_size);
@@ -152,11 +162,6 @@ void RtpPacket::SetPadding(const Napi::CallbackInfo &info, const Napi::Value &va
 void RtpPacket::SetExtension(const Napi::CallbackInfo &info, const Napi::Value &value)
 {
     packet->header->x = value.As<Napi::Boolean>();
-}
-
-void RtpPacket::SetCsrcCount(const Napi::CallbackInfo &info, const Napi::Value &value)
-{
-    packet->header->cc = value.As<Napi::Number>();
 }
 
 void RtpPacket::SetMarker(const Napi::CallbackInfo &info, const Napi::Value &value)

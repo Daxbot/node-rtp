@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+/**
+ * This example shows:
+ *  - RTCP sender report generation.
+ */
+
 const dgram = require('dgram');
 
 const { SrPacket, rtcpInterval } = require('../index.js');
@@ -11,7 +16,7 @@ const DEFAULT_RTCP_PORT = 5003;
 const DEFAULT_BANDWIDTH = 64000; // 64 kbit/s
 
 /**
- * Initializes a ToneGenerator and sends RTCP SR packets.
+ * Sends RTP data and generates RTCP SR packets.
  *
  * @param {object} args - class arguments.
  * @param {string} args.address - address to send packets.
@@ -43,7 +48,6 @@ class Sender {
 
         // The handle for our RTCP socket
         this.socket = null;
-
     }
 
     /**
@@ -51,8 +55,8 @@ class Sender {
      */
     get interval() {
         return rtcpInterval({
-            // Assume we are the only member
-            members: 1,
+            // Assume that we are one of two session members
+            members: 2,
 
             // Assume we are the only sender
             senders: 1,
@@ -60,7 +64,7 @@ class Sender {
             // Suggested value is 5% of RTP bandwidth
             rtcp_bw: this.bandwidth * 0.5,
 
-            // Assume that we are always sending
+            // We are always sending RTP packets
             we_sent: true,
 
             // The average size of RTCP packets (both sent and received)
@@ -72,9 +76,9 @@ class Sender {
     }
 
     /**
-     * Generate our RTCP sender reports and reschedule the timer.
+     * Generate an RTCP SR packet and reschedule the timer.
      */
-    process() {
+    send_report() {
         // Generate our report. Since we are not receiving any packets there is
         // no need to add any additional receive reports.
         const packet = new SrPacket();
@@ -87,21 +91,22 @@ class Sender {
         const data = packet.serialize();
         this.socket.send(data);
 
-        // Assume that no other RTCP packets are being sent/received
+        // Assume that no other RTCP packets are being sent/received. Thus the
+        // average packet size is just our report length.
         this.avg_rtcp_size = data.length;
 
-        // Reset RTP counts
+        // Reset counts for next report
         this.gen.pkt_count = 0;
         this.gen.byte_count = 0;
 
-        // Clear initial flag
+        // Clear 'initial' flag
         this.initial = false;
 
-        this.timer = setTimeout(() => this.process(), this.interval);
+        this.timer = setTimeout(() => this.send_report(), this.interval);
     }
 
     /**
-     * Start sending frames.
+     * Start sending packets.
      */
     start() {
         // Connect our RTCP channel
@@ -113,18 +118,18 @@ class Sender {
         this.gen.start();
 
         // Schedule our first report
-        this.timer = setTimeout(() => this.process(), this.interval);
+        this.timer = setTimeout(() => this.send_report(), this.interval);
     }
 
     /**
-     * Stop sending frames.
+     * Stop sending packets.
      */
     stop() {
-        this.socket.disconnect();
+        this.socket.close();
         this.gen.stop();
         clearTimeout(this.timer);
     }
-}
+};
 
 if(require.main === module) {
     const sender = new Sender();
