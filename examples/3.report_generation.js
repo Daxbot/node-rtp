@@ -4,10 +4,6 @@
  * This example builds on Example2 by adding RTCP report generation. A typical
  * application will choose whether to send an SR or RR packet based on if it
  * has sent an RTP packet in the last two report intervals.
- *
- * This example shows:
- *  - RTCP SR/RR generation.
- *  - Calculating packet loss.
  */
 
 const {
@@ -22,7 +18,7 @@ const {
 const Example2 = require('./2.source_description');
 
 /**
- * Receives RTP/RTCP packets and generates RTCP RR packets.
+ * Sends/receives RTP data and generates RTCP SR/RR packets.
  *
  * @param {object} args - class arguments.
  * @param {number} args.rtp_port - port to send RTP packets.
@@ -53,7 +49,7 @@ class Example3 extends Example2 {
     get members() {
         // Now that we are receving packets we no longer have to assume the
         // count of session members.
-        return Object.keys(this.sources).length;
+        return Object.keys(this.sources).length + 1;
     }
 
     /**
@@ -112,6 +108,35 @@ class Example3 extends Example2 {
 
         // Clear 'initial' flag
         this.initial = false;
+    }
+
+    /**
+     * Process received RTP packets.
+     *
+     * @param {RtpPacket} packet - packet to process.
+     */
+    processRtp(packet) {
+        if(!this.sources[packet.ssrc]) {
+            console.log('New source with ID', packet.ssrc, '(RTP)');
+            this.sources[packet.ssrc] = new Source(packet.ssrc);
+        }
+
+        this.sources[packet.ssrc].updateSeq(packet.seq);
+    }
+
+    /**
+     * Process received SR packets.
+     *
+     * @param {SrPacket} packet - packet to process.
+     */
+    processSr(packet) {
+        if(!this.sources[packet.ssrc]) {
+            console.log('New source with ID', packet.ssrc, '(SR)');
+            this.sources[packet.ssrc] = new Source(packet.ssrc);
+        }
+
+        // Update our LSR timestamp
+        this.sources[packet.ssrc].updateLsr(packet.ntp_sec, packet.ntp_frac);
     }
 
     /**
@@ -193,15 +218,7 @@ class Example3 extends Example2 {
      * @param {Buffer} data - packet data.
      */
     onRtp(data) {
-        // Parse the packet
-        const packet = new RtpPacket(data);
-
-        if(!this.sources[packet.ssrc]) {
-            console.log('New source with ID', packet.ssrc, '(RTP)');
-            this.sources[packet.ssrc] = new Source(packet.ssrc);
-        }
-
-        this.sources[packet.ssrc].updateSeq(packet.seq);
+        this.processRtp(new RtpPacket(data));
     }
 
     /**
@@ -213,36 +230,8 @@ class Example3 extends Example2 {
         const packet = parse(data);
 
         switch(packet.type) {
-            case PacketType.APP:
-                console.log("Got APP");
-                break;
-
-            case PacketType.BYE:
-                console.log("Got BYE");
-                break;
-
-            case PacketType.RR:
-                console.log("Got BYE");
-                break;
-
-            case PacketType.SDES:
-                for(let source of packet.sources) {
-                    if(source.cname && source.name)
-                        console.log("Got CNAME,NAME");
-                    else if(source.cname)
-                        console.log("Got CNAME");
-                }
-                break;
-
             case PacketType.SR:
-                console.log("Got SR");
-                if(!this.sources[packet.ssrc]) {
-                    console.log('New source with ID', packet.ssrc, '(SR)');
-                    this.sources[packet.ssrc] = new Source(packet.ssrc);
-                }
-
-                // Update our LSR timestamp
-                this.sources[packet.ssrc].updateLsr(packet.ntp_sec, packet.ntp_frac);
+                this.processSr(packet);
                 break;
         }
 

@@ -2,9 +2,6 @@
 
 /**
  * This example shows how to send a simple audio signal using RTP.
- *
- * Features shown:
- *  - Sending simple RTP payloads.
  */
 
 const dgram = require('dgram');

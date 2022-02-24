@@ -4,10 +4,6 @@
  * This example builds upon Example1 by adding rotating SDES packet generation.
  * SDES packets are bandwidth expensive and care should be taken to prioritize
  * more important source information such as the CNAME or NAME fields.
- *
- * Features shown:
- *  - RTCP SDES generation.
- *  - Calculating average rtp packet size.
  */
 
 const dgram = require('dgram');
