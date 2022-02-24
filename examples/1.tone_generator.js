@@ -77,12 +77,7 @@ class Example1 {
 
         // The handle for our RTP socket
         this.rtp_socket = dgram.createSocket('udp4');
-        this.rtp_socket.on('error', (e) => {
-            if(e.errno == -111)
-                return; // Ignore ECONNREFUSED
 
-            console.warn(`RTP socket error: ${e.message}`);
-        });
     }
 
     /**
@@ -115,7 +110,7 @@ class Example1 {
         this.rtp_packet.payload = this.frame_buffer;
 
         const data = this.rtp_packet.serialize();
-        this.rtp_socket.send(data, this.rtp_port, this.address);
+        this.rtpSend(data);
 
         this.rtp_pkt_count += 1;
         this.rtp_byte_count += data.length;
@@ -153,6 +148,17 @@ class Example1 {
      */
     stop() {
         this.stopRtp();
+    }
+
+    /**
+     * Send data through the RTP socket.
+     *
+     * @param {Buffer} data - buffer to send.
+     */
+    rtpSend(data) {
+        this.rtp_socket.send(data, this.rtp_port, this.address, () => {
+            // Ignore errors
+        });
     }
 };
 

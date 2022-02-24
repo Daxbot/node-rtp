@@ -69,12 +69,7 @@ class Example2 extends Example1 {
 
         // The handle for our RTCP socket
         this.rtcp_socket = dgram.createSocket('udp4');
-        this.rtcp_socket.on('error', (e) => {
-            if(e.errno == -111)
-                return; // Ignore ECONNREFUSED
 
-            console.warn(`RTCP socket error: ${e.message}`);
-        });
     }
 
     get members() {
@@ -136,7 +131,7 @@ class Example2 extends Example1 {
 
         // Send CNAME every cycle and NAME every 3 cycles
         if(this.name && (this.sdes_index++ % 3) == 0) {
-            console.log("Sending CNAME,NAME");
+            console.log("Send CNAME,NAME");
             packet.addSource({
                 ssrc: this.ssrc,
                 cname: this.cname,
@@ -144,7 +139,7 @@ class Example2 extends Example1 {
             });
         }
         else {
-            console.log("Sending CNAME");
+            console.log("Send CNAME");
             packet.addSource({
                 ssrc: this.ssrc,
                 cname: this.cname,
@@ -152,8 +147,7 @@ class Example2 extends Example1 {
         }
 
         const data = packet.serialize();
-        this.rtcp_socket.send(data, this.rtcp_port, this.address);
-        this.updateAvgSize(data.length);
+        this.rtcpSend(data);
 
         // Clear 'initial' flag
         this.initial = false;
@@ -175,6 +169,18 @@ class Example2 extends Example1 {
     stop() {
         super.stop();
         clearTimeout(this.sr_timer);
+    }
+
+    /**
+     * Send data through the RTCP socket.
+     *
+     * @param {Buffer} data - buffer to send.
+     */
+    rtcpSend(data) {
+        this.rtcp_socket.send(data, this.rtcp_port, this.address, () => {
+            // Ignore errors
+        });
+        this.updateAvgSize(data.length);
     }
 };
 

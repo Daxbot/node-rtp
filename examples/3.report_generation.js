@@ -77,10 +77,9 @@ class Example3 extends Example2 {
             packet.addReport(report);
         }
 
-        console.log("Sending SR");
+        console.log("Send SR");
         const data = packet.serialize();
-        this.rtcp_socket.send(data, this.rtcp_port, this.address);
-        this.updateAvgSize(data.length);
+        this.rtcpSend(data);
 
         // Reset counts for next report
         this.rtp_pkt_count = 0;
@@ -109,8 +108,7 @@ class Example3 extends Example2 {
         // Send our reports
         console.log("Sending RR");
         const data = packet.serialize();
-        this.rtcp_socket.send(data, this.rtcp_port, this.address);
-        this.updateAvgSize(data.length);
+        this.rtcpSend(data);
 
         // Clear 'initial' flag
         this.initial = false;
@@ -165,16 +163,28 @@ class Example3 extends Example2 {
     /**
      * Begin listening for packets.
      *
-     * @param {Number} rtp_port - RTP receive port.
-     * @param {Number} rtcp_port - RTCP receive port.
-     * @param {String} address - receive address.
+     * @param {number} rtp_port - RTP receive port.
+     * @param {number} rtcp_port - RTCP receive port.
+     * @param {string} address - receive address.
+     * @returns {Promise}
      */
     bind(rtp_port, rtcp_port, address) {
-        this.rtp_socket.bind(rtp_port, address);
-        this.rtp_socket.on('message', this.onRtp.bind(this));
-
-        this.rtcp_socket.bind(rtcp_port, address);
-        this.rtcp_socket.on('message', this.onRtcp.bind(this));
+        return Promise.all([
+            new Promise((resolve, reject) => {
+                this.rtp_socket.on('error', (e) => reject(e));
+                this.rtp_socket.bind(rtp_port, address, () => {
+                    this.rtp_socket.on('message', this.onRtp.bind(this));
+                    resolve();
+                });
+            }),
+            new Promise((resolve, reject) => {
+                this.rtcp_socket.on('error', (e) => reject(e));
+                this.rtcp_socket.bind(rtcp_port, address, () => {
+                    this.rtcp_socket.on('message', this.onRtcp.bind(this));
+                    resolve();
+                });
+            }),
+        ]);
     }
 
     /**
@@ -202,14 +212,38 @@ class Example3 extends Example2 {
     onRtcp(data) {
         const packet = parse(data);
 
-        if(packet.type == PacketType.SR) {
-            if(!this.sources[packet.ssrc]) {
-                console.log('New source with ID', packet.ssrc, '(SR)');
-                this.sources[packet.ssrc] = new Source(packet.ssrc);
-            }
+        switch(packet.type) {
+            case PacketType.APP:
+                console.log("Got APP");
+                break;
 
-            // Update our LSR timestamp
-            this.sources[packet.ssrc].updateLsr(packet.ntp_sec, packet.ntp_frac);
+            case PacketType.BYE:
+                console.log("Got BYE");
+                break;
+
+            case PacketType.RR:
+                console.log("Got BYE");
+                break;
+
+            case PacketType.SDES:
+                for(let source of packet.sources) {
+                    if(source.cname && source.name)
+                        console.log("Got CNAME,NAME");
+                    else if(source.cname)
+                        console.log("Got CNAME");
+                }
+                break;
+
+            case PacketType.SR:
+                console.log("Got SR");
+                if(!this.sources[packet.ssrc]) {
+                    console.log('New source with ID', packet.ssrc, '(SR)');
+                    this.sources[packet.ssrc] = new Source(packet.ssrc);
+                }
+
+                // Update our LSR timestamp
+                this.sources[packet.ssrc].updateLsr(packet.ntp_sec, packet.ntp_frac);
+                break;
         }
 
         this.updateAvgSize(packet.size);
@@ -217,14 +251,44 @@ class Example3 extends Example2 {
 };
 
 if(require.main === module) {
-    const example = new Example3({
-        rtp_port: 6002,
-        rtcp_port: 6003,
-        name: "Example3"
-    });
+    // The following allows for this example to be run up to twice so that the
+    // user can observe the two processes exchanging data.
+    async function main() {
+        try {
+            const example = new Example3({
+                rtp_port: 5002,
+                rtcp_port: 5003,
+                name: "Example3"
+            });
 
-    example.bind(5002, 5003);
-    example.start();
+            await example.bind(6002, 6003);
+
+            console.log("Sending on ports 5002/5003");
+            console.log("Listening on ports 6002/6003");
+            example.start();
+        }
+        catch(e) {
+            if(e.errno == -98) {
+                // EADDRINUSE
+                const example = new Example3({
+                    rtp_port: 6002,
+                    rtcp_port: 6003,
+                    name: "Example3"
+                });
+
+                await example.bind(5002, 5003);
+
+                console.log("Sending on ports 6002/6003");
+                console.log("Listening on ports 5002/5003");
+                example.start();
+            }
+            else {
+                throw e;
+            }
+        }
+    }
+
+    main();
 }
 
 module.exports=exports=Example3;
