@@ -49,7 +49,28 @@ class Example3 extends Example2 {
     get members() {
         // Now that we are receving packets we no longer have to assume the
         // count of session members.
-        return Object.keys(this.sources).length + 1;
+        return Object.keys(this.sources).length;
+    }
+
+    /**
+     * Add a new source to the sources table.
+     *
+     * @param {number} id - source identifier.
+     */
+    addSource(id) {
+        if(this.sources[id] !== undefined)
+            throw ReferenceError('Source already exists');
+
+        this.sources[id] = new Source(id);
+    }
+
+    /**
+     * Remove a source from the sources table.
+     *
+     * @param {number} id - source identifier.
+     */
+    removeSource(id) {
+        delete this.sources[id];
     }
 
     /**
@@ -65,12 +86,16 @@ class Example3 extends Example2 {
         packet.updateNtpTime(new Date());
 
         for(let source of Object.values(this.sources)) {
+            if(source.id == this.ssrc)
+                continue;  // Skip ourselves
+
             // Update the lost packet count
             source.updateLost();
 
             // Generate a report
             const report = source.toReport(new Date());
-            packet.addReport(report);
+            if(report)
+                packet.addReport(report);
         }
 
         console.log("Send SR");
@@ -93,12 +118,16 @@ class Example3 extends Example2 {
         packet.ssrc = this.ssrc;
 
         for(let source of Object.values(this.sources)) {
+            if(source.id == this.ssrc)
+                continue;  // Skip ourselves
+
             // Update the lost packet count
             source.updateLost();
 
             // Generate a report
             const report = source.toReport(new Date());
-            packet.addReport(report);
+            if(report)
+                packet.addReport(report);
         }
 
         // Send our reports
@@ -111,30 +140,11 @@ class Example3 extends Example2 {
     }
 
     /**
-     * Process received RTP packets.
-     *
-     * @param {RtpPacket} packet - packet to process.
-     */
-    processRtp(packet) {
-        if(!this.sources[packet.ssrc]) {
-            console.log('New source with ID', packet.ssrc, '(RTP)');
-            this.sources[packet.ssrc] = new Source(packet.ssrc);
-        }
-
-        this.sources[packet.ssrc].updateSeq(packet.seq);
-    }
-
-    /**
      * Process received SR packets.
      *
      * @param {SrPacket} packet - packet to process.
      */
     processSr(packet) {
-        if(!this.sources[packet.ssrc]) {
-            console.log('New source with ID', packet.ssrc, '(SR)');
-            this.sources[packet.ssrc] = new Source(packet.ssrc);
-        }
-
         // Update our LSR timestamp
         this.sources[packet.ssrc].updateLsr(packet.ntp_sec, packet.ntp_frac);
     }
@@ -159,10 +169,13 @@ class Example3 extends Example2 {
     start() {
         super.start();
 
+        // Add ourselves to the sender table
+        this.addSource(this.ssrc);
+
         this.report_timer = setTimeout(() => this.cycleReports(), this.interval);
 
         this.on_off_timer = setInterval(() => {
-            // Every 10 seconds stop sending RTP packets to switch which report
+            // Every 20 seconds stop sending RTP packets to switch which report
             // type we are sending.
             if(this.rtp_timer) {
                 console.log("Stop tone");
@@ -173,7 +186,7 @@ class Example3 extends Example2 {
                 this.startRtp();
             }
 
-        }, 10000);
+        }, 20000);
     }
 
     /**
@@ -218,7 +231,15 @@ class Example3 extends Example2 {
      * @param {Buffer} data - packet data.
      */
     onRtp(data) {
-        this.processRtp(new RtpPacket(data));
+        const packet = parse(data);
+
+        if(packet.ssrc !== undefined && !this.sources[packet.ssrc]) {
+            console.log('New source with ID', packet.ssrc, '(RTP)');
+            this.addSource(packet.ssrc);
+        }
+
+        // Process packet
+        this.sources[packet.ssrc].updateSeq(packet.seq);
     }
 
     /**
@@ -228,14 +249,22 @@ class Example3 extends Example2 {
      */
     onRtcp(data) {
         const packet = parse(data);
+        this.updateAvgSize(packet.size);
 
+        if(!packet.ssrc)
+            return;
+
+        if(!this.sources[packet.ssrc]) {
+            console.log('New source with ID', packet.ssrc, '(RTCP)');
+            this.addSource(packet.ssrc);
+        }
+
+        // Process packet
         switch(packet.type) {
             case PacketType.SR:
                 this.processSr(packet);
                 break;
         }
-
-        this.updateAvgSize(packet.size);
     }
 };
 

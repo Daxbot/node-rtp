@@ -44,7 +44,27 @@ class Example4 extends Example3 {
     get senders() {
         // Now that we are tracking timeouts we can provide an accurate count
         // of the number of session senders.
-        return this._senders + (this.we_sent) ? 1 : 0;
+        return this._senders;
+    }
+
+    /**
+     * Extension of Example3 so that we can add a timestamps entry.
+     *
+     * @param {number} id - source identifier.
+     */
+    addSource(id) {
+        super.addSource(id);
+        this.timestamps[id] = { rtp: 0, rtcp: 0 };
+    }
+
+    /**
+     * Extension of Example3 so that we can remove our timestamps entry.
+     *
+     * @param {number} id - source identifier
+     */
+    removeSource(id) {
+        super.removeSource(id);
+        delete this.timestamps[id]
     }
 
     pruneSources() {
@@ -78,7 +98,6 @@ class Example4 extends Example3 {
         this._senders = senders;
 
         this.prune_timer = setTimeout(() => this.pruneSources(), interval);
-        console.log(this.members, this.senders);
     }
 
     /**
@@ -102,14 +121,19 @@ class Example4 extends Example3 {
      *
      * @param {Buffer} data - packet data.
      */
-     onRtp(data) {
+    onRtp(data) {
         const packet = parse(data);
-        this.processRtp(packet);
 
-        if(!this.timestamps[packet.ssrc])
-            this.timestamps[packet.ssrc] = { rtp: 0, rtcp: 0 };
+        if(!this.sources[packet.ssrc]) {
+            console.log('New source with ID', packet.ssrc, '(RTP)');
+            this.addSource(packet.ssrc);
+        }
 
+        // Update timestamp
         this.timestamps[packet.ssrc].rtp = Date.now();
+
+        // Process packet (from Example3)
+        this.sources[packet.ssrc].updateSeq(packet.seq);
     }
 
     /**
@@ -119,19 +143,45 @@ class Example4 extends Example3 {
      */
     onRtcp(data) {
         const packet = parse(data);
+        this.updateAvgSize(packet.size);
 
+        if(!packet.ssrc)
+            return;
+
+        if(!this.sources[packet.ssrc]) {
+            console.log('New source with ID', packet.ssrc, '(RTCP)');
+            this.addSource(packet.ssrc);
+        }
+
+        // Update timestamp
+        this.timestamps[packet.ssrc].rtcp = Date.now();
+
+        // Process packet (from Example3)
         switch(packet.type) {
             case PacketType.SR:
                 this.processSr(packet);
                 break;
         }
+    }
 
-        if(!this.timestamps[packet.ssrc])
-            this.timestamps[packet.ssrc] = { rtp: 0, rtcp: 0 };
+    /**
+     * Extension of Example1 so we can track our own timestamp.
+     *
+     * @param {Buffer} data - data to send.
+     */
+    rtpSend(data) {
+        super.rtpSend(data);
+        this.timestamps[this.ssrc].rtp = Date.now();
+    }
 
-        this.timestamps[packet.ssrc].rtcp = Date.now();
-
-        this.updateAvgSize(packet.size);
+    /**
+     * Extension of Example2 so we can track our own timestamp.
+     *
+     * @param {Buffer} data - data to send.
+     */
+    rtcpSend(data) {
+        super.rtcpSend(data);
+        this.timestamps[this.ssrc].rtcp = Date.now();
     }
 };
 
