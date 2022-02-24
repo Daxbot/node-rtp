@@ -12,6 +12,8 @@ const { createSocket, RemoteInfo } = require('dgram');
 const {
     RtpPacket,
     RrPacket,
+    Source,
+    PacketType,
     rtcpInterval,
     parse
 } = require('../index.js');
@@ -50,7 +52,10 @@ class Receiver {
         this.rtcp_sizes = [];
 
         // Holds information about our sender
-        this.sender = null;
+        this.source = null;
+
+        // Holds our sender's source transport address
+        this.rinfo = null;
 
         // The handle for our report timer
         this.timer = null;
@@ -110,41 +115,26 @@ class Receiver {
      * Generate an RTCP RR packet and reschedule the timer.
      */
     send_report() {
-        if(!this.sender) {
+        if(!this.source) {
             // No sender data yet, just reschedule
             this.timer = setTimeout(() => this.send_report(), this.interval);
             return;
         }
 
+        // Update the lost packet count
+        this.source.updateLost();
+
+        // Generate a report on our source
+        const report = this.source.toReport(new Date());
+        console.log(report);
+
+        // Send our report
         const packet = new RrPacket();
         packet.ssrc = this.ssrc;
-
-        const ext_max = (this.sender.cycles * SEQ_MOD) + this.sender.max_seq;
-        const expected = ext_max - this.sender.base_seq - 1;
-        const lost = expected - this.sender.recv_total;
-
-        const exp_interval = expected - this.sender.exp_prior;
-        const recv_interval = this.sender.recv_total - this.sender.recv_prior;
-        const lost_interval = exp_interval - recv_interval;
-
-        this.sender.exp_prior = expected;
-        this.sender.recv_prior = this.sender.recv_total;
-
-        let fraction = 0;
-        if(exp_interval && lost_interval > 0)
-            fraction = lost_interval / exp_interval;
-
-        packet.addReport({
-            ssrc: this.sender.ssrc,
-            fraction: fraction,
-            lost: lost,
-            last_seq: ext_max,
-        });
+        packet.addReport(report);
 
         const data = packet.serialize();
-        const { port, address } = this.sender.rinfo;
-
-        this.rtcp_socket.send(data, port, address);
+        this.rtcp_socket.send(data, this.rinfo.port, this.rinfo.address);
         this.update_avg_size(data.length);
 
         // Clear 'initial' flag
@@ -191,29 +181,11 @@ class Receiver {
         // Parse the packet
         const packet = new RtpPacket(data);
 
-        const { ssrc, seq } = packet;
-        if(!this.sender || this.sender.ssrc != ssrc) {
-            // Initialize sender data
-            this.sender = {
-                ssrc,
-                rinfo,
-                base_seq: seq,
-                max_seq: seq,
-                cycles: 0,
-                recv_total: 0,
-                recv_prior: 0,
-                exp_prior: 0,
-            };
-        }
+        if(!this.source || this.source.id != packet.ssrc)
+            this.source = new Source(packet.ssrc);
 
-        if(seq < this.sender.max_seq) {
-            // If the new sequence is less than the old one then we will assume
-            // that it wrapped.
-            this.sender.cycles += 1;
-        }
-
-        this.sender.recv_total += 1;
-        this.sender.max_seq = seq;
+        this.source.updateSeq(packet.seq);
+        this.rinfo = rinfo;
     }
 
     /**
@@ -225,6 +197,14 @@ class Receiver {
         const packet = parse(data);
         if(packet)
             this.update_avg_size(packet.size);
+
+        if(packet.type == PacketType.SR) {
+            if(!this.source || this.source.id != packet.ssrc)
+                return;
+
+            // Update our LSR timestamp
+            this.source.updateLsr(packet.ntp_sec, packet.ntp_frac);
+        }
     }
 };
 

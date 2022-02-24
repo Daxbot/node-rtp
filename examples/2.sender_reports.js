@@ -83,10 +83,11 @@ class Sender {
         // no need to add any additional receive reports.
         const packet = new SrPacket();
         packet.ssrc = this.gen.ssrc;
-        packet.ntp_ts = new Date();
         packet.rtp_ts = this.gen.ts;
         packet.pkt_count = this.gen.pkt_count;
         packet.byte_count = this.gen.byte_count;
+
+        packet.updateNtpTime(new Date());
 
         const data = packet.serialize();
         this.socket.send(data);

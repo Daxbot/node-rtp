@@ -172,11 +172,7 @@ void SdesPacket::RemoveSource(const Napi::CallbackInfo &info)
     else
         ssrc = info[0].ToObject().Get("ssrc").ToNumber();
 
-    int result = rtcp_sdes_remove_entry(packet, ssrc);
-    if(result < 0) {
-        auto e = Napi::Error::New(info.Env(), "Failed to remove source");
-        e.ThrowAsJavaScriptException();
-    }
+    rtcp_sdes_remove_entry(packet, ssrc);
 }
 
 Napi::Value SdesPacket::GetSources(const Napi::CallbackInfo &info)

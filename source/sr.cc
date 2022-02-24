@@ -1,15 +1,7 @@
 #include <string>
-#include <chrono>
 
 #include "sr.h"
-
-using namespace std::chrono;
-
-// Ntp fractional second conversion: https://stackoverflow.com/a/65149566
-using fractions = duration<std::int64_t, std::ratio<1, 0x100000000>>;
-
-// Seconds between Jan 1, 1900 and Jan 1, 1970
-constexpr uint32_t EPOCH_OFFSET = 2208988800;
+#include "rtp/ntp.h"
 
 Napi::Object SrPacket::Init(Napi::Env env, Napi::Object exports)
 {
@@ -17,6 +9,7 @@ Napi::Object SrPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceMethod<&SrPacket::Serialize>("serialize", napi_enumerable),
         InstanceMethod<&SrPacket::AddReport>("addReport", napi_enumerable),
         InstanceMethod<&SrPacket::RemoveReport>("removeReport", napi_enumerable),
+        InstanceMethod<&SrPacket::UpdateNtpTime>("updateNtpTime", napi_enumerable),
         InstanceAccessor<&SrPacket::GetSize>("size", napi_enumerable),
         InstanceAccessor<&SrPacket::GetVersion>("version", napi_enumerable),
         InstanceAccessor<&SrPacket::GetPadding>("padding", napi_enumerable),
@@ -24,7 +17,8 @@ Napi::Object SrPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceAccessor<&SrPacket::GetType>("type", napi_enumerable),
         InstanceAccessor<&SrPacket::GetReports>("reports", napi_enumerable),
         InstanceAccessor<&SrPacket::GetSsrc, &SrPacket::SetSsrc>("ssrc", napi_enumerable),
-        InstanceAccessor<&SrPacket::GetNtpTime, &SrPacket::SetNtpTime>("ntp_ts", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetNtpSec, &SrPacket::SetNtpSec>("ntp_sec", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetNtpFrac, &SrPacket::SetNtpFrac>("ntp_frac", napi_enumerable),
         InstanceAccessor<&SrPacket::GetRtpTime, &SrPacket::SetRtpTime>("rtp_ts", napi_enumerable),
         InstanceAccessor<&SrPacket::GetExtension, &SrPacket::SetExtension>("ext", napi_enumerable),
     });
@@ -96,20 +90,18 @@ Napi::Value SrPacket::AddReport(const Napi::CallbackInfo &info)
 
     rtcp_report report;
     report.ssrc = value.Get("ssrc").ToNumber();
+    report.fraction = value.Get("fraction").ToNumber();
     report.lost = value.Get("lost").ToNumber();
     report.last_seq = value.Get("last_seq").ToNumber();
     report.jitter = value.Get("jitter").ToNumber();
     report.lsr = value.Get("lsr").ToNumber();
     report.dlsr = value.Get("dlsr").ToNumber();
 
-    float fraction = value.Get("fraction").ToNumber();
-    rtcp_report_set_fraction(&report, fraction);
-
     int result = rtcp_sr_add_report(packet, &report);
     return Napi::Number::New(info.Env(), result);
 }
 
-Napi::Value SrPacket::RemoveReport(const Napi::CallbackInfo &info)
+void SrPacket::RemoveReport(const Napi::CallbackInfo &info)
 {
     if(info.Length() < 1) {
         auto e = Napi::Error::New(info.Env(), "Must provide a report id");
@@ -122,8 +114,22 @@ Napi::Value SrPacket::RemoveReport(const Napi::CallbackInfo &info)
     else
         ssrc = info[0].ToObject().Get("ssrc").ToNumber();
 
-    int result = rtcp_sr_remove_report(packet, ssrc);
-    return Napi::Number::New(info.Env(), result);
+    rtcp_sr_remove_report(packet, ssrc);
+}
+
+void SrPacket::UpdateNtpTime(const Napi::CallbackInfo &info)
+{
+    if(info.Length() < 1) {
+        auto e = Napi::Error::New(info.Env(), "Must provide a Date object");
+        e.ThrowAsJavaScriptException();
+    }
+
+    // Milliseconds since Jan 1, 1970
+    double s = info[0].As<Napi::Date>().ValueOf();
+
+    ntp_tv ntp = ntp_from_unix(s / 1000.0);
+    packet->ntp_sec = ntp.sec;
+    packet->ntp_frac = ntp.frac;
 }
 
 Napi::Value SrPacket::GetSize(const Napi::CallbackInfo &info)
@@ -156,17 +162,14 @@ Napi::Value SrPacket::GetSsrc(const Napi::CallbackInfo &info)
     return Napi::Number::New(info.Env(), packet->ssrc);
 }
 
-Napi::Value SrPacket::GetNtpTime(const Napi::CallbackInfo &info)
+Napi::Value SrPacket::GetNtpSec(const Napi::CallbackInfo &info)
 {
-    auto tp = system_clock::time_point(); // Jan 1, 1970
-    tp -= seconds(EPOCH_OFFSET); // Jan 1, 1900
-    tp += seconds(packet->ntp_sec);
-    tp += duration_cast<system_clock::duration>(fractions(packet->ntp_frac));
+    return Napi::Number::New(info.Env(), packet->ntp_sec);
+}
 
-    auto tp_ms = time_point_cast<milliseconds>(tp);
-    auto ms = tp_ms.time_since_epoch();
-
-    return Napi::Date::New(info.Env(), ms.count());
+Napi::Value SrPacket::GetNtpFrac(const Napi::CallbackInfo &info)
+{
+    return Napi::Number::New(info.Env(), packet->ntp_frac);
 }
 
 Napi::Value SrPacket::GetRtpTime(const Napi::CallbackInfo &info)
@@ -182,15 +185,12 @@ Napi::Value SrPacket::GetReports(const Napi::CallbackInfo &info)
 
         rtcp_report *report = &packet->reports[i];
         obj.Set("ssrc", Napi::Number::New(info.Env(), report->ssrc));
+        obj.Set("fraction", Napi::Number::New(info.Env(), report->fraction));
         obj.Set("lost", Napi::Number::New(info.Env(), report->lost));
         obj.Set("last_seq", Napi::Number::New(info.Env(), report->last_seq));
         obj.Set("jitter", Napi::Number::New(info.Env(), report->jitter));
         obj.Set("lsr", Napi::Number::New(info.Env(), report->lsr));
         obj.Set("dlsr", Napi::Number::New(info.Env(), report->dlsr));
-
-        float fraction = 0;
-        rtcp_report_get_fraction(report, &fraction);
-        obj.Set("fraction", Napi::Number::New(info.Env(), fraction));
 
         array[i] = obj;
     }
@@ -221,21 +221,14 @@ void SrPacket::SetSsrc(const Napi::CallbackInfo &info, const Napi::Value &value)
     packet->ssrc = value.As<Napi::Number>();
 }
 
-void SrPacket::SetNtpTime(const Napi::CallbackInfo &info, const Napi::Value &value)
+void SrPacket::SetNtpSec(const Napi::CallbackInfo &info, const Napi::Value &value)
 {
-    // Milliseconds since Jan 1, 1900
-    const int64_t time = value.As<Napi::Date>().ValueOf();
+    packet->ntp_sec = value.As<Napi::Number>();
+}
 
-    auto tp = system_clock::time_point(); // Jan 1, 1970
-    tp += seconds(EPOCH_OFFSET); // Jan 1, 1900
-    tp += milliseconds(time);
-
-    auto total = tp.time_since_epoch();
-    auto sec = duration_cast<seconds>(total);
-    auto frac = duration_cast<fractions>(total - sec);
-
-    packet->ntp_sec = sec.count();
-    packet->ntp_frac = frac.count();
+void SrPacket::SetNtpFrac(const Napi::CallbackInfo &info, const Napi::Value &value)
+{
+    packet->ntp_frac = value.As<Napi::Number>();
 }
 
 void SrPacket::SetRtpTime(const Napi::CallbackInfo &info, const Napi::Value &value)

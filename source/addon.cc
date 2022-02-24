@@ -3,6 +3,7 @@
 #include "rr.h"
 #include "rtp.h"
 #include "sdes.h"
+#include "source.h"
 #include "sr.h"
 
 #include "rtp/rtcp_util.h"
@@ -37,6 +38,8 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
     RtpPacket::Init(env, exports);
     SdesPacket::Init(env, exports);
     SrPacket::Init(env, exports);
+
+    Source::Init(env, exports);
 
     exports.Set(
         Napi::String::New(env, "rtcpInterval"),

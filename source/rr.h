@@ -15,7 +15,7 @@ class RrPacket : public Napi::ObjectWrap<RrPacket>
         Napi::Value Serialize(const Napi::CallbackInfo &info);
 
         Napi::Value AddReport(const Napi::CallbackInfo &info);
-        Napi::Value RemoveReport(const Napi::CallbackInfo &info);
+        void RemoveReport(const Napi::CallbackInfo &info);
 
         // Getters
         Napi::Value GetSize(const Napi::CallbackInfo &info);

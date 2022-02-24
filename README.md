@@ -122,8 +122,8 @@ const pkt = new RrPacket();
 // Add reports
 pkt.addReport({
     ssrc: 1,            // Source identifier
-    fraction: 0.02,     // Percentage of packets lost
-    lost: 3,            // Cumulative number of packets lost
+    fraction: 0,        // Percentage of packets lost
+    lost: 0,            // Cumulative number of packets lost
     last_seq: 1024,     // Highest sequence number received
     jitter: 0,          // Interarrival jitter
     lsr: 0,             // Last SR timestamp
@@ -179,8 +179,8 @@ pkt.rtp_ts = 0;
 // Add reports
 pkt.addReport({
     ssrc: 1,            // Source identifier
-    fraction: 0.02,     // Percentage of packets lost
-    lost: 3,            // Cumulative number of packets lost
+    fraction: 0,        // Percentage of packets lost
+    lost: 0,            // Cumulative number of packets lost
     last_seq: 1024,     // Highest sequence number received
     jitter: 0,          // Interarrival jitter
     lsr: 0,             // Last SR timestamp

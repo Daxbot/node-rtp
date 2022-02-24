@@ -56,7 +56,7 @@ RtpPacket::RtpPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
             e.ThrowAsJavaScriptException();
         }
         else {
-            rtp_packet_init(packet, pt);
+            rtp_packet_init(packet, pt, rand(), rand(), rand());
         }
     }
     else {

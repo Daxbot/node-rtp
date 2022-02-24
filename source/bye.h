@@ -15,7 +15,7 @@ class ByePacket : public Napi::ObjectWrap<ByePacket>
         Napi::Value Serialize(const Napi::CallbackInfo &info);
 
         Napi::Value AddSource(const Napi::CallbackInfo &info);
-        Napi::Value RemoveSource(const Napi::CallbackInfo &info);
+        void RemoveSource(const Napi::CallbackInfo &info);
 
         // Getters
         Napi::Value GetSize(const Napi::CallbackInfo &info);

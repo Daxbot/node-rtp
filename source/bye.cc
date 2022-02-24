@@ -84,15 +84,14 @@ Napi::Value ByePacket::AddSource(const Napi::CallbackInfo &info)
     return Napi::Number::New(info.Env(), result);
 }
 
-Napi::Value ByePacket::RemoveSource(const Napi::CallbackInfo &info)
+void ByePacket::RemoveSource(const Napi::CallbackInfo &info)
 {
     if(info.Length() < 1) {
         auto e = Napi::Error::New(info.Env(), "Must provide source id");
         e.ThrowAsJavaScriptException();
     }
 
-    int result = rtcp_bye_remove_source(packet, info[0].ToNumber());
-    return Napi::Number::New(info.Env(), result);
+    rtcp_bye_remove_source(packet, info[0].ToNumber());
 }
 
 Napi::Value ByePacket::GetSize(const Napi::CallbackInfo &info)

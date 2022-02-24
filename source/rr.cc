@@ -86,20 +86,18 @@ Napi::Value RrPacket::AddReport(const Napi::CallbackInfo &info)
 
     rtcp_report report;
     report.ssrc = value.Get("ssrc").ToNumber();
+    report.fraction = value.Get("fraction").ToNumber();
     report.lost = value.Get("lost").ToNumber();
     report.last_seq = value.Get("last_seq").ToNumber();
     report.jitter = value.Get("jitter").ToNumber();
     report.lsr = value.Get("lsr").ToNumber();
     report.dlsr = value.Get("dlsr").ToNumber();
 
-    float fraction = value.Get("fraction").ToNumber();
-    rtcp_report_set_fraction(&report, fraction);
-
     int result = rtcp_rr_add_report(packet, &report);
     return Napi::Number::New(info.Env(), result);
 }
 
-Napi::Value RrPacket::RemoveReport(const Napi::CallbackInfo &info)
+void RrPacket::RemoveReport(const Napi::CallbackInfo &info)
 {
     if(info.Length() < 1) {
         auto e = Napi::Error::New(info.Env(), "Must provide a report id");
@@ -112,8 +110,7 @@ Napi::Value RrPacket::RemoveReport(const Napi::CallbackInfo &info)
     else
         ssrc = info[0].ToObject().Get("ssrc").ToNumber();
 
-    int result = rtcp_rr_remove_report(packet, ssrc);
-    return Napi::Number::New(info.Env(), result);
+    rtcp_rr_remove_report(packet, ssrc);
 }
 
 Napi::Value RrPacket::GetSize(const Napi::CallbackInfo &info)
@@ -154,15 +151,12 @@ Napi::Value RrPacket::GetReports(const Napi::CallbackInfo &info)
 
         rtcp_report *report = &packet->reports[i];
         obj.Set("ssrc", Napi::Number::New(info.Env(), report->ssrc));
+        obj.Set("fraction", Napi::Number::New(info.Env(), report->fraction));
         obj.Set("lost", Napi::Number::New(info.Env(), report->lost));
         obj.Set("last_seq", Napi::Number::New(info.Env(), report->last_seq));
         obj.Set("jitter", Napi::Number::New(info.Env(), report->jitter));
         obj.Set("lsr", Napi::Number::New(info.Env(), report->lsr));
         obj.Set("dlsr", Napi::Number::New(info.Env(), report->dlsr));
-
-        float fraction = 0;
-        rtcp_report_get_fraction(report, &fraction);
-        obj.Set("fraction", Napi::Number::New(info.Env(), fraction));
 
         array[i] = obj;
     }

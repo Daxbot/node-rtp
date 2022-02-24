@@ -5,6 +5,7 @@ const {
     RtpPacket,
     SdesPacket,
     SrPacket,
+    Source,
     rtcpInterval,
 } = require("bindings")("node_rtp");;
 
@@ -54,6 +55,7 @@ module.exports=exports= {
     RtpPacket,
     SdesPacket,
     SrPacket,
+    Source,
     PacketType,
     rtcpInterval,
     parse,
