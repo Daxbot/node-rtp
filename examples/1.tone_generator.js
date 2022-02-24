@@ -127,16 +127,32 @@ class Example1 {
     /**
      * Begin sending RTP packets.
      */
-    start() {
-        console.log("SSRC set to", this.ssrc);
+    startRtp() {
         this.rtp_timer = setInterval(() => this.sendFrame(), this.duration);
     }
 
     /**
      * Stop sending RTP packets.
      */
-    stop() {
+    stopRtp() {
         clearInterval(this.rtp_timer);
+        this.rtp_timer = null;
+        this.we_sent = false;
+    }
+
+    /**
+     * Begin sending packets.
+     */
+    start() {
+        console.log("SSRC set to", this.ssrc);
+        this.startRtp();
+    }
+
+    /**
+     * Stop sending packets.
+     */
+    stop() {
+        this.stopRtp();
     }
 };
 

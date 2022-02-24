@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * This example builds upon the ToneGenerator by adding rotating SDES packet
- * generation. SDES packets are bandwidth expensive and care should be taken
- * to prioritize more important source information such as the CNAME or NAME
- * fields.
+ * This example builds upon Example1 by adding rotating SDES packet generation.
+ * SDES packets are bandwidth expensive and care should be taken to prioritize
+ * more important source information such as the CNAME or NAME fields.
  *
  * Features shown:
  *  - RTCP SDES generation.
@@ -19,7 +18,7 @@ const Example1 = require('./1.tone_generator');
 const DEFAULT_BANDWIDTH = 64000; // 64 kbit/s
 
 /**
- * Sends RTP data and generates RTCP SR packets.
+ * Sends RTP data and generates RTCP SDES packets.
  *
  * @param {object} args - class arguments.
  * @param {number} args.rtp_port - port to send RTP packets.
@@ -78,16 +77,26 @@ class Example2 extends Example1 {
         });
     }
 
+    get members() {
+        // Assume that we are one of two session members
+        return 2;
+    }
+
+    get senders() {
+        // Assume we are the only sender
+        return 1;
+    }
+
     /**
      * Get the RTCP report interval.
      */
     get interval() {
         return rtcpInterval({
             // Assume that we are one of two session members
-            members: 2,
+            members: this.members,
 
             // Assume we are the only sender
-            senders: 1,
+            senders: this.senders,
 
             // Suggested value is 5% of RTP bandwidth
             rtcp_bw: this.bandwidth * 0.5,

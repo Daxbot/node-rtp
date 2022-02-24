@@ -1,21 +1,25 @@
 #!/usr/bin/env node
 
 /**
+ * This example builds on Example2 by adding RTCP report generation. A typical
+ * application will choose whether to send an SR or RR packet based on if it
+ * has sent an RTP packet in the last two report intervals.
+ *
  * This example shows:
- *  - RTCP receiver report generation.
+ *  - RTCP SR/RR generation.
  *  - Calculating packet loss.
- *  - Calculating average rtp packet size.
  */
 
 const {
     RtpPacket,
     RrPacket,
+    SrPacket,
     Source,
     PacketType,
     parse
 } = require('../index.js');
 
-const Example3 = require('./3.sender_report');
+const Example2 = require('./2.source_description');
 
 /**
  * Receives RTP/RTCP packets and generates RTCP RR packets.
@@ -32,7 +36,7 @@ const Example3 = require('./3.sender_report');
  * @param {number} [args.cname] - canonical name.
  * @param {number} [args.name] - user name.
  */
-class Example4 extends Example3 {
+class Example3 extends Example2 {
     constructor(args={}) {
         super(args);
 
@@ -40,11 +44,54 @@ class Example4 extends Example3 {
         this.sources = {};
 
         // The handle for our report timer
-        this.rr_timer = null;
+        this.report_timer = null;
+
+        // The handle for our RTP on/off cycle timer
+        this.on_off_timer = null;
+    }
+
+    get members() {
+        // Now that we are receving packets we no longer have to assume the
+        // count of session members.
+        return Object.keys(this.sources).length;
     }
 
     /**
-     * Generate an RTCP RR packet and reschedule the timer.
+     * Send an RTCP SR packet.
+     */
+    sendSr() {
+        const packet = new SrPacket();
+        packet.ssrc = this.ssrc;
+        packet.rtp_ts = this.ts;
+        packet.pkt_count = this.rtp_pkt_count;
+        packet.byte_count = this.rtp_byte_count;
+
+        packet.updateNtpTime(new Date());
+
+        for(let source of Object.values(this.sources)) {
+            // Update the lost packet count
+            source.updateLost();
+
+            // Generate a report
+            const report = source.toReport(new Date());
+            packet.addReport(report);
+        }
+
+        console.log("Sending SR");
+        const data = packet.serialize();
+        this.rtcp_socket.send(data, this.rtcp_port, this.address);
+        this.updateAvgSize(data.length);
+
+        // Reset counts for next report
+        this.rtp_pkt_count = 0;
+        this.rtp_byte_count = 0;
+
+        // Clear 'initial' flag
+        this.initial = false;
+    }
+
+    /**
+     * Send an RTCP RR packet.
      */
     sendRr() {
         const packet = new RrPacket();
@@ -54,10 +101,8 @@ class Example4 extends Example3 {
             // Update the lost packet count
             source.updateLost();
 
-            // Generate a report on our source
+            // Generate a report
             const report = source.toReport(new Date());
-            console.log("Source report:", report);
-
             packet.addReport(report);
         }
 
@@ -69,8 +114,20 @@ class Example4 extends Example3 {
 
         // Clear 'initial' flag
         this.initial = false;
+    }
 
-        this.rr_timer = setTimeout(() => this.sendRr(), this.interval);
+    /**
+     * Chooses whether to send an SR or RR packet.
+     */
+    cycleReports() {
+        // If we have sent in the last cycle send an SR packet, otherwise
+        // send an RR packet.
+        if(this.we_sent)
+            this.sendSr();
+        else
+            this.sendRr();
+
+        this.report_timer = setTimeout(() => this.cycleReports(), this.interval);
     }
 
     /**
@@ -78,7 +135,22 @@ class Example4 extends Example3 {
      */
     start() {
         super.start();
-        this.rr_timer = setTimeout(() => this.sendRr(), this.interval);
+
+        this.report_timer = setTimeout(() => this.cycleReports(), this.interval);
+
+        this.on_off_timer = setInterval(() => {
+            // Every 10 seconds stop sending RTP packets to switch which report
+            // type we are sending.
+            if(this.rtp_timer) {
+                console.log("Stop tone");
+                this.stopRtp();
+            }
+            else {
+                console.log("Start tone");
+                this.startRtp();
+            }
+
+        }, 10000);
     }
 
     /**
@@ -86,7 +158,8 @@ class Example4 extends Example3 {
      */
     stop() {
         super.stop();
-        clearTimeout(this.sr_timer);
+        clearTimeout(this.report_timer);
+        clearInterval(this.on_off_timer);
     }
 
     /**
@@ -144,14 +217,14 @@ class Example4 extends Example3 {
 };
 
 if(require.main === module) {
-    const example = new Example4({
+    const example = new Example3({
         rtp_port: 6002,
         rtcp_port: 6003,
-        name: "Example4"
+        name: "Example3"
     });
 
     example.bind(5002, 5003);
     example.start();
 }
 
-module.exports=exports=Example4;
+module.exports=exports=Example3;
