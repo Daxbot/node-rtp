@@ -149,6 +149,7 @@ const pkt = new SdesPacket();
 
 // Add sources
 pkt.addSource({
+    ssrc: 1,
     cname: "33994c30-773c-4bc7-8514-a2e8f398940b",
     name: "John Doe",
     email: "john.doe@example.com"

@@ -30,9 +30,9 @@ RtpPacket::RtpPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
 {
     Napi::Env env = info.Env();
 
-    if(info.Length() < 1 || !(info[0].IsNumber() || info[0].IsBuffer())) {
+    if(info.Length() < 1 || (info.Length() < 2 && !info[0].IsBuffer())) {
         auto e = Napi::TypeError::New(env,
-            "Must provide either a packet type (Number) or a Buffer");
+            "Must provide either a Buffer or packet type and SSRC");
 
         e.ThrowAsJavaScriptException();
     }
@@ -43,23 +43,7 @@ RtpPacket::RtpPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
         e.ThrowAsJavaScriptException();
     }
 
-    if(info[0].IsNumber()) {
-        // Packet type
-        const unsigned int pt = info[0].As<Napi::Number>();
-        if(pt < 0 || pt > 0x7f) {
-            auto e = Napi::RangeError::New(env,
-                "Packet type must be in range [0-127]");
-
-            rtp_packet_free(packet);
-            packet = nullptr;
-
-            e.ThrowAsJavaScriptException();
-        }
-        else {
-            rtp_packet_init(packet, pt, rand(), rand(), rand());
-        }
-    }
-    else {
+    if(info[0].IsBuffer()) {
         // Buffer
         auto buffer = info[0].As<Napi::Uint8Array>();
         if(rtp_packet_parse(packet, buffer.Data(), buffer.ElementLength()) != 0) {
@@ -70,7 +54,24 @@ RtpPacket::RtpPacket(const Napi::CallbackInfo& info) : ObjectWrap(info)
 
             e.ThrowAsJavaScriptException();
         }
+        return;
     }
+
+    int pt = info[0].ToNumber();
+    uint32_t ssrc = info[1].ToNumber();
+
+    // Packet type
+    if(pt < 0 || pt > 0x7f) {
+        auto e = Napi::RangeError::New(env,
+            "Packet type must be in range [0-127]");
+
+        rtp_packet_free(packet);
+        packet = nullptr;
+
+        e.ThrowAsJavaScriptException();
+    }
+
+    rtp_packet_init(packet, pt, ssrc, rand(), rand());
 }
 
 RtpPacket::~RtpPacket()

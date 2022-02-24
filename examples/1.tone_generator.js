@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * This example shows:
+ * This example shows how to send a simple audio signal using RTP.
+ *
+ * Features shown:
  *  - Sending simple RTP payloads.
  */
 
@@ -11,8 +13,6 @@ const { RtpPacket } = require('../index.js');
 // Unpack Math
 const { sin, pow, PI } = Math;
 
-const DEFAULT_ADDRESS = '127.0.0.1';
-const DEFAULT_PORT = 5002;
 const DEFAULT_SAMPLE_RATE = 48000;  // Hz
 const DEFAULT_FREQUENCY = 261.63;   // Hz
 const DEFAULT_DURATION = 20;        // ms
@@ -24,18 +24,23 @@ const DEFAULT_VOLUME = 0.1;         // 10%
  * Catch using gstreamer or a similar tool:
  * gst-launch-1.0 udpsrc port=5002 ! "application/x-rtp,payload=96,clock-rate=48000" ! rtpL16depay ! autoaudiosink sync=false
  *
- * @param {object} args - class arguments.
- * @param {string} args.address - socket address to send frames.
- * @param {number} args.port - socket port to send frames.
- * @param {number} sample_rate - audio sample rate in Hz.
- * @param {number} frequency - tone frequency in Hz.
- * @param {number} duration - frame duration in ms.
- * @param {number} volume - output volume [0.0, 1.0].
+ * @param {object} args - additional arguments.
+ * @param {number} args.rtp_port - port to send RTP packets.
+ * @param {string} [args.address] - address to send packets.
+ * @param {number} [args.sample_rate] - audio sample rate in Hz.
+ * @param {number} [args.frequency] - tone frequency in Hz.
+ * @param {number} [args.duration] - frame duration in ms.
+ * @param {number} [args.volume] - output volume [0.0, 1.0].
  */
-class ToneGenerator {
+class Example1 {
     constructor(args={}) {
-        this.address = args.address || DEFAULT_ADDRESS;
-        this.port = args.port || DEFAULT_PORT;
+        if(args.rtp_port === undefined)
+            throw TypeError("Must provide rtp_port");
+
+        this.rtp_port = args.rtp_port;
+
+        // Optional arguments
+        this.address = args.address;
         this.sample_rate = args.sample_rate || DEFAULT_SAMPLE_RATE;
         this.frequency = args.frequency || DEFAULT_FREQUENCY;
         this.duration = args.duration || DEFAULT_DURATION;
@@ -50,82 +55,96 @@ class ToneGenerator {
         // The buffer to use when constructing our tone
         this.frame_buffer = Buffer.alloc(this.frame_size);
 
-        // Our RTP packet. It's important to keep this allocated so that we
-        // can maintain our sequence/ssrc between frames.
-        this.packet = new RtpPacket(96);
-
         // This value will be incremented for each sample so that we can
         // maintain our sine wave through subsequent frames.
         this.sample_index = 0;
 
+        // True if we have sent an RTP packet
+        this.we_sent = false;
+
+        // Our RTP packet. It's important to keep this allocated so that we
+        // can maintain our sequence/ssrc between frames.
+        this.rtp_packet = new RtpPacket(96, Math.random() * Math.pow(2, 32));
+
         // The number of packets that have been sent.
-        this.pkt_count = 0;
+        this.rtp_pkt_count = 0;
 
         // The number of octets that have been sent.
-        this.byte_count = 0;
+        this.rtp_byte_count = 0;
 
-        // The handle for our interval timer
-        this.timer = null;
+        // The handle for our RTP timer
+        this.rtp_timer = null;
 
         // The handle for our RTP socket
-        this.socket = null;
+        this.rtp_socket = dgram.createSocket('udp4');
+        this.rtp_socket.on('error', (e) => {
+            if(e.errno == -111)
+                return; // Ignore ECONNREFUSED
+
+            console.warn(`RTP socket error: ${e.message}`);
+        });
     }
 
     /**
      * Get the RTP ssrc.
      */
     get ssrc() {
-        return this.packet.ssrc;
+        return this.rtp_packet.ssrc;
     }
 
     /**
      * Get the RTP timestamp.
      */
     get ts() {
-        return this.packet.ts;
+        return this.rtp_packet.ts;
     }
 
     /**
-     * Start sending RTP packets.
+     * Construct and send an audio frame.
+     */
+    sendFrame() {
+        for(let j = 0; j < this.frame_samples; ++j) {
+            const f = 2 * PI * this.frequency / this.sample_rate;
+            const A = (pow(2, 15) - 1) * this.volume;
+            const sample = A * sin(f * this.sample_index++);
+            this.frame_buffer.writeInt16BE(sample, 2 * j);
+        }
+
+        this.rtp_packet.seq += 1;
+        this.rtp_packet.ts += this.frame_samples;
+        this.rtp_packet.payload = this.frame_buffer;
+
+        const data = this.rtp_packet.serialize();
+        this.rtp_socket.send(data, this.rtp_port, this.address);
+
+        this.rtp_pkt_count += 1;
+        this.rtp_byte_count += data.length;
+
+        // Set the 'we_sent' flag
+        this.we_sent = true;
+    }
+
+    /**
+     * Begin sending RTP packets.
      */
     start() {
-        this.socket = dgram.createSocket('udp4');
-        this.socket.on('error', () => { /* ignore */ });
-        this.socket.connect(this.port, this.address);
-
-        this.timer = setInterval(() => {
-            for(let j = 0; j < this.frame_samples; ++j) {
-                const f = 2 * PI * this.frequency / this.sample_rate;
-                const A = (pow(2, 15) - 1) * this.volume;
-                const sample = A * sin(f * this.sample_index++);
-                this.frame_buffer.writeInt16BE(sample, 2 * j);
-            }
-
-            this.packet.seq += 1;
-            this.packet.ts += this.frame_samples;
-            this.packet.payload = this.frame_buffer;
-
-            const data = this.packet.serialize();
-            this.socket.send(data);
-
-            this.pkt_count += 1;
-            this.byte_count += data.length;
-
-        }, this.duration);
+        console.log("SSRC set to", this.ssrc);
+        this.rtp_timer = setInterval(() => this.sendFrame(), this.duration);
     }
 
     /**
      * Stop sending RTP packets.
      */
     stop() {
-        this.socket.close();
-        clearInterval(this.timer);
+        clearInterval(this.rtp_timer);
     }
 };
 
 if(require.main === module) {
-    const gen = new ToneGenerator();
-    gen.start();
+    const example = new Example1({
+        rtp_port: 5002,
+    });
+    example.start();
 }
 
-module.exports=exports=ToneGenerator;
+module.exports=exports=Example1;

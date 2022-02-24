@@ -20,6 +20,8 @@ Napi::Object SrPacket::Init(Napi::Env env, Napi::Object exports)
         InstanceAccessor<&SrPacket::GetNtpSec, &SrPacket::SetNtpSec>("ntp_sec", napi_enumerable),
         InstanceAccessor<&SrPacket::GetNtpFrac, &SrPacket::SetNtpFrac>("ntp_frac", napi_enumerable),
         InstanceAccessor<&SrPacket::GetRtpTime, &SrPacket::SetRtpTime>("rtp_ts", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetPktCount, &SrPacket::SetPktCount>("pkt_count", napi_enumerable),
+        InstanceAccessor<&SrPacket::GetByteCount, &SrPacket::SetByteCount>("byte_count", napi_enumerable),
         InstanceAccessor<&SrPacket::GetExtension, &SrPacket::SetExtension>("ext", napi_enumerable),
     });
 
