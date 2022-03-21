@@ -31,4 +31,22 @@ describe('AppPacket', function() {
         const data = pkt.serialize();
         expect(buffer.compare(data, start_size, start_size + buffer.length)).to.equal(0);
     });
+
+    it('should not add extra padding', function() {
+        let pkt = new AppPacket();
+        pkt.data = Buffer.from([1]);
+        expect(parse(pkt.serialize()).data.length).to.equal(4);
+
+        pkt = new AppPacket();
+        pkt.data = Buffer.from([1, 2]);
+        expect(parse(pkt.serialize()).data.length).to.equal(4);
+
+        pkt = new AppPacket();
+        pkt.data = Buffer.from([1, 2, 3]);
+        expect(parse(pkt.serialize()).data.length).to.equal(4);
+
+        pkt = new AppPacket();
+        pkt.data = Buffer.from([1, 2, 3, 4]);
+        expect(parse(pkt.serialize()).data.length).to.equal(4);
+    });
 });
