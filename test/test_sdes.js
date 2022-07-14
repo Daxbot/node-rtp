@@ -41,4 +41,19 @@ describe('SdesPacket', function() {
         for(let i = 0; i < pkt.sources.length; ++i)
             expect(pkt.sources[i].ssrc).to.not.equal(0x1234);
     });
+
+    // https://github.com/Daxbot/node-rtp/issues/1
+    it('should not segfault with repeated parse', function(done) {
+        let pkt = new SdesPacket();
+        pkt.addSource({
+            ssrc:2823272256,
+            cname:"786b5a7e-6d6e-4e69-b3d4-72fe13a9d329",
+            name:"Test"
+        });
+
+        for(let i = 0; i < 1000; ++i)
+            parse(pkt.serialize());
+
+        done();
+    });
 });
