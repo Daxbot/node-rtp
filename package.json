@@ -1,5 +1,5 @@
 {
-    "name": "@daxbot/rtp",
+    "name": "@novadynamics/rtp",
     "version": "0.4.2",
     "description": "Real-time transport protocol",
     "main": "index.js",
@@ -11,16 +11,12 @@
         "type": "git",
         "url": "git+ssh://git@github.com:Daxbot/node-rtp.git"
     },
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
-    },
     "keywords": [
         "rtp",
         "rtcp"
     ],
-    "author": "Wilkins White <wilkins.white@daxbot.com>",
+    "author": "Wilkins White <ww@novadynamics.com>",
     "license": "MIT",
-    "homepage": "https://bitbucket.org/novadynamics/node-rtp#readme",
     "dependencies": {
         "bindings": "^1.5.0",
         "cmake-js": "^6.3.0",

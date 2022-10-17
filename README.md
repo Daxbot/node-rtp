@@ -6,13 +6,6 @@ RFC 3550](https://datatracker.ietf.org/doc/html/rfc3550).
 
 This library provides a wrapper for [librtp](https://github.com/Daxbot/librtp)
 
-## Installation
-
-To install this package using npm run the following:
-
-    npm config set @daxbot:registry https://npm.pkg.github.com/
-    npm install @daxbot/rtp
-
 ## Usage
 
 This package supports both RTP and RTCP packets. RTP packets deliver data and
